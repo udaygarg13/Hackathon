@@ -12,7 +12,10 @@ class Character:
         self.image = pygame.image.load(f"{name}.png")
         self.image = pygame.transform.scale(self.image, (self.size, self.size))
 
-    def move(self, key):
+    def move(self, key, rock_locations):
+        current_x = self.x
+        current_y = self.y
+        
         if key == 'w' and self.y > Stage.GRID_SIZE:
             self.y -= Stage.GRID_SIZE
         if key == 's' and self.y < Stage.GRID_SIZE*(Stage.ROWS-1):
@@ -21,38 +24,87 @@ class Character:
             self.x -= Stage.GRID_SIZE
         if key == 'd' and self.x < Stage.GRID_SIZE*(Stage.COLS-1):
             self.x += Stage.GRID_SIZE
+        for rock_x, rock_y in rock_locations:
+            if self.x == rock_x and self.y == rock_y:
+                self.x = current_x
+                self.y = current_y
+        
 
     def draw(self, screen):
         screen.blit(self.image, (self.x, self.y))
 
 class Player(Character):
-    def __init__(self,name,health):
+    def __init__(self, name, health):
         x, y = 1, 1
+        self.damage = 0
+        self.swordname = ''
+        self.hp_pot = 0
         super().__init__(x, y, name, health)
-    
+
     def sword(self, boss_health):
-        return boss_health - 10
+        return boss_health - self.damage
 
 class Boss(Character):
-    def __init__(self,name,health,speed,dps):
+    def __init__(self, name, health, speed, dps):
         x, y = 1, 1
         self.speed = speed
         self.dps = dps
         while x == 1 and y == 1:
             x, y = random.randint(0, Stage.COLS-1) * Stage.GRID_SIZE + 1, random.randint(0, Stage.ROWS-1) * Stage.GRID_SIZE + 1
-            print (x,y)
         super().__init__(x, y, name, health)
+
+class Rock:
+    def __init__(self, x, y):
+        self.x = x
+        self.y = y
+        self.size = Stage.GRID_SIZE - 2
+        self.image = pygame.image.load("rock.png")
+        self.image = pygame.transform.scale(self.image, (self.size, self.size))
+
+    def draw(self, screen):
+        screen.blit(self.image, (self.x, self.y))
 
 class Chest:
     def __init__(self, x, y):
         self.x = x
         self.y = y
         self.size = Stage.GRID_SIZE - 2
-        self.image = pygame.image.load("a.gif")
+        self.image = pygame.image.load("chest.png")
         self.image = pygame.transform.scale(self.image, (self.size, self.size))
 
     def draw(self, screen):
         screen.blit(self.image, (self.x, self.y))
+
+    def open(self,stage):
+        healing = int(*random.choices([0,1],weights=[0.80,0.20],k=1))
+        rarities=["Legendary","Epic","Rare","Uncommon","Common"]
+        rarityroll = random.choices(rarities,weights=[5,10,20,25,40], k=1)
+        rarity=''.join(rarityroll)
+        level = stage
+        bowdmg=0
+        sworddmg=0
+        if level==1:
+            swordbase=12
+            bowbase=10
+        elif level==2:
+            swordbase=16
+            bowbase=15
+        elif level==3:
+            swordbase=20
+            bowbase=18
+        elif level==4:
+            swordbase=30
+            bowbase=35
+        elif level==5:
+            swordbase=50
+            bowbase=45
+        dmgbuff=[3,2,1.5,1.25,1]
+        for i in range (0,len(rarities)):
+            if rarity==rarities[i]:
+                sworddmg=swordbase*dmgbuff[i]
+                bowdmg=bowbase*dmgbuff[i]
+        swordname = f"{rarity} Sword"
+        return(healing,sworddmg,swordname)
 
 class Stage:
     WIDTH, HEIGHT = 1280, 720
@@ -60,7 +112,7 @@ class Stage:
     ROWS, COLS = 9, 9
     FPS = 10
 
-    def __init__(self,stage):
+    def __init__(self, stage, boss_name, boss_health, boss_attack):
         pygame.init()
         self.stage = stage
         # Create the screen
@@ -68,12 +120,33 @@ class Stage:
         pygame.display.set_caption("Grid Movement")
 
         # Create the player and boss
-        self.player = Player("Player",100)
-        self.boss = Boss("Boss1",100,1.5,5)
+        self.player = Player("Player", 100)
+        self.boss = Boss(boss_name, boss_health, 1.5, boss_attack)
         self.chest_locations = []
         for i in range(self.stage):
-            self.chest_locations.append([(random.randint(0, Stage.COLS-1) * Stage.GRID_SIZE + 1), (random.randint(0, Stage.ROWS-1) * Stage.GRID_SIZE + 1)]) 
+            chest_x = random.randint(0, Stage.COLS-1) * Stage.GRID_SIZE + 1
+            chest_y = random.randint(0, Stage.ROWS-1) * Stage.GRID_SIZE + 1
+            while (chest_x, chest_y) == (self.player.x, self.player.y) or (chest_x, chest_y) == (self.boss.x, self.boss.y):
+                chest_x = random.randint(0, Stage.COLS-1) * Stage.GRID_SIZE + 1
+            chest_y = random.randint(0, Stage.ROWS-1) * Stage.GRID_SIZE + 1
+            self.chest_locations.append((chest_x, chest_y))
+
         self.chests = [Chest(x, y) for x, y in self.chest_locations]
+
+        # Add rocks to some random grid locations
+        self.rock_locations = []
+        rock_number = random.randint(0,Stage.ROWS)
+        for i in range(rock_number):
+            rock_x = random.randint(0, Stage.COLS-1) * Stage.GRID_SIZE + 1
+            rock_y = random.randint(0, Stage.ROWS-1) * Stage.GRID_SIZE + 1
+            # Ensure rocks don't spawn on player, boss, or chest locations
+            while (rock_x, rock_y) in self.chest_locations or (rock_x, rock_y) == (self.player.x, self.player.y) or (rock_x, rock_y) == (self.boss.x, self.boss.y):
+                rock_x = random.randint(0, Stage.COLS-1) * Stage.GRID_SIZE + 1
+                rock_y = random.randint(0, Stage.ROWS-1) * Stage.GRID_SIZE + 1
+            self.rock_locations.append((rock_x, rock_y))
+
+        self.rocks = [Rock(x, y) for x, y in self.rock_locations]
+
         # Game loop
         self.clock = pygame.time.Clock()
         self.boss_move_timer = 0
@@ -97,34 +170,54 @@ class Stage:
                 player_key = 'a'
             if keys[pygame.K_d]:
                 player_key = 'd'
-            if keys[pygame.K_SLASH] and 0 < (abs(self.player.x - self.boss.x) <= Stage.GRID_SIZE and 0 < abs(self.player.y - self.boss.y) <= Stage.GRID_SIZE):
+            if keys[pygame.K_SLASH] and 0 <= (abs(self.player.x - self.boss.x) <= Stage.GRID_SIZE and 0 <= abs(self.player.y - self.boss.y) <= Stage.GRID_SIZE):
                 self.boss.health = self.player.sword(self.boss.health)
+            if keys[pygame.K_LCTRL]:
+                if self.player.hp_pot>0:
+                    self.player.health += 25
+                    self.player.hp_pot -= 1
 
-        self.player.move(player_key)
+        self.player.move(player_key,self.rock_locations)
+        for chest in self.chests:
+            if self.player.x == chest.x and self.player.y == chest.y:
+                
+                tempheal,tempdamage,tempswordname=chest.open(self.stage)
+                self.player.hp_pot += tempheal
+                if tempdamage > self.player.damage:
+                    self.player.damage = tempdamage
+                    self.player.swordname = f" ({tempswordname})"
+                self.chests.remove(chest)
 
     def update_game(self):
         self.boss_move_timer += 1
+
+        # Check for collisions with rocks
+        
 
         if self.player.x == self.boss.x and self.player.y == self.boss.y:
             self.player.health -= self.boss.dps
         else:
             if self.boss_move_timer % self.boss.speed == 0:
                 boss_key = random.choice(['w', 's', 'a', 'd'])
-                self.boss.move(boss_key)
+                self.boss.move(boss_key,self.rock_locations)
 
     def draw_grid(self):
         for row in range(Stage.ROWS):
             for col in range(Stage.COLS):
-                pygame.draw.rect(self.screen, (255, 255, 255), (col * Stage.GRID_SIZE, row * Stage.GRID_SIZE, Stage.GRID_SIZE, Stage.GRID_SIZE), 1)
+                pygame.draw.rect(self.screen, (255, 255, 255),
+                                 (col * Stage.GRID_SIZE, row * Stage.GRID_SIZE, Stage.GRID_SIZE, Stage.GRID_SIZE), 1)
 
     def draw_characters(self):
         self.player.draw(self.screen)
         self.boss.draw(self.screen)
 
+    def draw_rocks(self):
+        for rock in self.rocks:
+            rock.draw(self.screen)
+
     def draw_chests(self):
         for chest in self.chests:
             chest.draw(self.screen)
-
 
     def draw_hud(self):
         # Draw background
@@ -133,10 +226,6 @@ class Stage:
         # Draw the grid
         self.draw_grid()
 
-        # Draw the characters
-        self.draw_characters()
-
-        # Draw player and boss sprites with spacing
         self.screen.blit(self.player.image, (750, 20))
         self.screen.blit(self.boss.image, (750, 120))
         pygame.draw.rect(self.screen, (255, 255, 255), (745, 15, 90, 90), 5)
@@ -154,28 +243,56 @@ class Stage:
         self.screen.blit(boss_name_display, (840, 135))
         boss_health_bar_width = (self.boss.health / 100) * 40
         pygame.draw.rect(self.screen, (255, 0, 0), (835, 170, boss_health_bar_width, 20))
-
+        stage_display = pygame.font.SysFont('Calibri', 45, True).render(f"LEVEL {int(self.stage)}", True, (0, 255, 0))
+        self.screen.blit(stage_display, (745, 215))
+        player_damage_display = pygame.font.SysFont('Calibri', 25, True).render(f"Current Damage{self.player.swordname}: {int(self.player.damage)}", True, (0, 255, 0))
+        self.screen.blit(player_damage_display, (745, 275))
+        player_hp_pot_display = pygame.font.SysFont('Calibri', 25, True).render(f"+25 HP Potions: {int(self.player.hp_pot)}", True, (0, 255, 0))
+        self.screen.blit(player_hp_pot_display, (745, 310))
     def display_results(self):
-        if self.player.health == 0:
+        if self.player.health <= 0:
             text_surface_2 = pygame.font.SysFont('Calibri', 30, True).render("You lose", False, (255, 255, 255))
             self.screen.blit(text_surface_2, (1000, 360))
             pygame.display.flip()
-        elif self.boss.health == 0:
+            return("Loss")
+        if self.stage<5 and self.boss.health <= 0:
+            return("Won")
+        if self.stage==5 and self.boss.health <= 0:
             text_surface_3 = pygame.font.SysFont('Calibri', 30, True).render("You win", False, (255, 255, 255))
             self.screen.blit(text_surface_3, (1000, 360))
             pygame.display.flip()
+            return("Victory")
+
 
     def run_game(self):
+        result = ''
         while True:
             self.handle_events()
             self.process_input()
             self.update_game()
             self.draw_hud()
+            self.draw_rocks()
             self.draw_chests()
+            self.draw_characters()
             pygame.display.flip()
             self.clock.tick(Stage.FPS)
-            self.display_results()
+            result=self.display_results()
+            if result is not None:
+                return(result)
 
 if __name__ == "__main__":
-    game = Stage(1)
-    game.run_game()
+    bosses = [["Blinky", 150, 10],
+            ["Pinky", 250, 20],
+            ["Inky", 500, 30],
+            ["Clyde", 750, 40],
+            ["Pacman", 1000, 100]]
+    for i in range(len(bosses)):
+        game = Stage(i+1,bosses[i][0],bosses[i][1],bosses[i][2])
+        result=game.run_game()
+        print(result)
+        if result == 'Loss':
+            print("You loose")
+            break
+        if result == "Victory":
+            print("You win")
+            break
