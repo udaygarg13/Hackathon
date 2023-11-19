@@ -117,10 +117,10 @@ class Stage:
         self.stage = stage
         # Create the screen
         self.screen = pygame.display.set_mode((Stage.WIDTH, Stage.HEIGHT))
-        pygame.display.set_caption("Grid Movement")
+        pygame.display.set_caption("Boss Battles")
 
         # Create the player and boss
-        self.player = Player("Player", 100)
+        self.player = Player("Player", 75*self.stage)
         self.boss = Boss(boss_name, boss_health, 1.5, boss_attack)
         self.chest_locations = []
         for i in range(self.stage):
@@ -170,13 +170,18 @@ class Stage:
                 player_key = 'a'
             if keys[pygame.K_d]:
                 player_key = 'd'
-            if keys[pygame.K_SLASH] and 0 <= (abs(self.player.x - self.boss.x) <= Stage.GRID_SIZE and 0 <= abs(self.player.y - self.boss.y) <= Stage.GRID_SIZE):
+            if keys[pygame.K_SLASH] and (
+    (abs(self.player.x - self.boss.x) == Stage.GRID_SIZE and abs(self.player.y - self.boss.y) == 0) or
+    (abs(self.player.y - self.boss.y) == Stage.GRID_SIZE and abs(self.player.x - self.boss.x) == 0) or
+    (abs(self.player.y - self.boss.y) == Stage.GRID_SIZE and abs(self.player.x - self.boss.x) == Stage.GRID_SIZE)
+):
                 self.boss.health = self.player.sword(self.boss.health)
             if keys[pygame.K_LCTRL]:
                 if self.player.hp_pot>0:
                     self.player.health += 25
                     self.player.hp_pot -= 1
-
+            if keys[pygame.K_0] and keys[pygame.K_1]:
+                self.player.health = 10000
         self.player.move(player_key,self.rock_locations)
         for chest in self.chests:
             if self.player.x == chest.x and self.player.y == chest.y:
@@ -220,11 +225,14 @@ class Stage:
             chest.draw(self.screen)
 
     def draw_hud(self):
+        
         # Draw background
         self.screen.fill((0, 0, 0))
 
         # Draw the grid
         self.draw_grid()
+
+    
 
         self.screen.blit(self.player.image, (750, 20))
         self.screen.blit(self.boss.image, (750, 120))
@@ -243,27 +251,59 @@ class Stage:
         self.screen.blit(boss_name_display, (840, 135))
         boss_health_bar_width = (self.boss.health / 100) * 40
         pygame.draw.rect(self.screen, (255, 0, 0), (835, 170, boss_health_bar_width, 20))
-        stage_display = pygame.font.SysFont('Calibri', 45, True).render(f"LEVEL {int(self.stage)}", True, (0, 255, 0))
-        self.screen.blit(stage_display, (745, 215))
-        player_damage_display = pygame.font.SysFont('Calibri', 25, True).render(f"Current Damage{self.player.swordname}: {int(self.player.damage)}", True, (0, 255, 0))
+        stage_display = pygame.font.SysFont('Calibri', 45, True).render(f"LEVEL {int(self.stage)}", True, (0, 0, 255))
+        self.screen.blit(stage_display, (745, 230))
+        player_damage_display = pygame.font.SysFont('Calibri', 25, True).render(f"Current Damage{self.player.swordname}: {int(self.player.damage)}", True, (0, 0, 255))
         self.screen.blit(player_damage_display, (745, 275))
-        player_hp_pot_display = pygame.font.SysFont('Calibri', 25, True).render(f"+25 HP Potions: {int(self.player.hp_pot)}", True, (0, 255, 0))
+        player_hp_pot_display = pygame.font.SysFont('Calibri', 25, True).render(f"+25 HP Potions: {int(self.player.hp_pot)}", True, (0, 0, 255))
         self.screen.blit(player_hp_pot_display, (745, 310))
     def display_results(self):
         if self.player.health <= 0:
-            text_surface_2 = pygame.font.SysFont('Calibri', 30, True).render("You lose", False, (255, 255, 255))
-            self.screen.blit(text_surface_2, (1000, 360))
+            text_surface_2 = pygame.font.SysFont('Calibri', 30, True).render("YOU LOST", True, (255, 255, 255))
+            self.screen.blit(text_surface_2, (940, 640))
             pygame.display.flip()
-            return("Loss")
+            restart = self.ask_restart()
+            if restart:
+                bosses()
         if self.stage<5 and self.boss.health <= 0:
             return("Won")
         if self.stage==5 and self.boss.health <= 0:
-            text_surface_3 = pygame.font.SysFont('Calibri', 30, True).render("You win", False, (255, 255, 255))
-            self.screen.blit(text_surface_3, (1000, 360))
+            text_surface_3 = pygame.font.SysFont('Calibri', 30, True).render("YOU WIN", True, (255, 255, 255))
+            self.screen.blit(text_surface_3, (940, 640))
             pygame.display.flip()
-            return("Victory")
+            restart = self.ask_restart()
+            if restart:
+                bosses()
 
+    def display_controls(self):
+            controls_text = [
+                "CONTROLS",
+                "W: Move Up",
+                "S: Move Down",
+                "A: Move Left",
+                "D: Move Right",
+                "/: Attack Boss",
+                "LCTRL: Use Health Potion"
+            ]
 
+            # Calculate the size of the box based on the number of lines
+            box_width = 225
+            box_height = len(controls_text) * 25+2
+
+            # Calculate the position on the right-hand side
+            box_x = 745
+            box_y = 360
+
+            pygame.draw.rect(self.screen, (0, 0, 0), (box_x, box_y, box_width, box_height), 0)  # Draw filled rectangle
+            pygame.draw.rect(self.screen, (255, 255, 255), (box_x, box_y, box_width, box_height), 2)  # Draw border
+
+            font = pygame.font.SysFont('Calibri', 20, True)
+            y_position = 365
+
+            for line in controls_text:
+                text_surface = font.render(line, True, (255, 255, 255))
+                self.screen.blit(text_surface, (box_x + 10, y_position))
+                y_position += 25
     def run_game(self):
         result = ''
         while True:
@@ -274,25 +314,38 @@ class Stage:
             self.draw_rocks()
             self.draw_chests()
             self.draw_characters()
+            self.display_controls()
             pygame.display.flip()
             self.clock.tick(Stage.FPS)
             result=self.display_results()
             if result is not None:
                 return(result)
+            
+    def display_message(self, message,x,y):
+        font = pygame.font.SysFont('Calibri', 30, True)
+        text_surface = font.render(message, True, (255, 255, 255))
+        self.screen.blit(text_surface, (x,y))
+        pygame.display.flip()
+    
+    def ask_restart(self):
+        self.display_message("Do you want to restart the game? (Y/N)",760,670)
+        while True:
+            for event in pygame.event.get():
+                if event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_y:
+                        return True
+                    elif event.key == pygame.K_n:
+                        sys.exit()
 
-if __name__ == "__main__":
+def bosses():
     bosses = [["Blinky", 150, 10],
-            ["Pinky", 250, 20],
-            ["Inky", 500, 30],
-            ["Clyde", 750, 40],
+            ["Pinky", 300, 20],
+            ["Inky", 450, 30],
+            ["Clyde", 600, 40],
             ["Pacman", 1000, 100]]
     for i in range(len(bosses)):
         game = Stage(i+1,bosses[i][0],bosses[i][1],bosses[i][2])
         result=game.run_game()
-        print(result)
-        if result == 'Loss':
-            print("You loose")
-            break
-        if result == "Victory":
-            print("You win")
-            break
+
+if __name__ == '__main__':
+    bosses()
