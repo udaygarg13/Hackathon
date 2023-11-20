@@ -1,6 +1,12 @@
 import pygame
 import sys
 import random
+import os
+
+def resource_path(relative_path):
+    if hasattr(sys, '_MEIPASS'):
+        return os.path.join(sys._MEIPASS, relative_path)
+    return os.path.join(os.path.abspath("."), relative_path)
 
 class Character:
     def __init__(self, x, y, name, health):
@@ -9,9 +15,9 @@ class Character:
         self.size = Stage.GRID_SIZE-2
         self.name = name
         self.health = health
-        self.image = pygame.image.load(f"{name}.png")
+        self.image = pygame.image.load(resource_path(f"{name}.png"))
         self.image = pygame.transform.scale(self.image, (self.size, self.size))
-
+    
     def move(self, key, rock_locations):
         current_x = self.x
         current_y = self.y
@@ -58,7 +64,7 @@ class Rock:
         self.x = x
         self.y = y
         self.size = Stage.GRID_SIZE - 2
-        self.image = pygame.image.load("rock.png")
+        self.image = pygame.image.load(resource_path("rock.png"))
         self.image = pygame.transform.scale(self.image, (self.size, self.size))
 
     def draw(self, screen):
@@ -69,7 +75,7 @@ class Chest:
         self.x = x
         self.y = y
         self.size = Stage.GRID_SIZE - 2
-        self.image = pygame.image.load("chest.png")
+        self.image = pygame.image.load(resource_path("chest.png"))
         self.image = pygame.transform.scale(self.image, (self.size, self.size))
 
     def draw(self, screen):
@@ -116,7 +122,7 @@ class Stage:
         pygame.init()
         self.stage = stage
         # Create the screen
-        self.screen = pygame.display.set_mode((Stage.WIDTH, Stage.HEIGHT))
+        self.screen = pygame.display.set_mode((Stage.WIDTH, Stage.HEIGHT), pygame.RESIZABLE)
         pygame.display.set_caption("Boss Battles")
 
         # Create the player and boss

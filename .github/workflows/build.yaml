@@ -1,0 +1,35 @@
+name: Build Executable
+
+on:
+  #push:
+  #  branches:
+  #    - main
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+    
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v2
+
+    - name: Set up Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: 3.8
+
+    - name: Install Dependencies
+      run: |
+        pip install pyinstaller
+        pip install pygame
+        
+    - name: Build Executable
+      run: |
+        pyinstaller  --icon Pacman.png --add-data "C:\Users\udayg\OneDrive\Documents\Hackathon\chest.png;." --add-data "C:\Users\udayg\OneDrive\Documents\Hackathon\Clyde.png;." --add-data "C:\Users\udayg\OneDrive\Documents\Hackathon\Inky.png;." --add-data "C:\Users\udayg\OneDrive\Documents\Hackathon\Pacman.png;." --add-data "C:\Users\udayg\OneDrive\Documents\Hackathon\Pinky.png;." --add-data "C:\Users\udayg\OneDrive\Documents\Hackathon\Player.png;." --add-data "C:\Users\udayg\OneDrive\Documents\Hackathon\rock.png;." --add-data "C:\Users\udayg\OneDrive\Documents\Hackathon\Blinky.png;." --noconsole --onefile BossBattles.py
+
+    - name: Upload Artifact
+      uses: actions/upload-artifact@v2
+      with:
+        name: ScatterMaker
+        path: ./dist/BossBattles.exe
