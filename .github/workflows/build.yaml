@@ -26,7 +26,7 @@ jobs:
         
     - name: Build Executable
       run: |
-        pyinstaller  --icon Pacman.png --add-data "chest.png;." --add-data "Clyde.png;." --add-data "Inky.png;." --add-data "Pacman.png;." --add-data "Pinky.png;." --add-data "Player.png;." --add-data "rock.png;." --add-data "Blinky.png;." --noconsole --onefile BossBattles.py
+        pyinstaller  --icon icon.ico --add-data "chest.png;." --add-data "Clyde.png;." --add-data "Inky.png;." --add-data "Pacman.png;." --add-data "Pinky.png;." --add-data "Player.png;." --add-data "rock.png;." --add-data "Blinky.png;." --noconsole --onefile BossBattles.py
 
     - name: Upload Artifact
       uses: actions/upload-artifact@v2
