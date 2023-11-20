@@ -26,7 +26,7 @@ jobs:
         
     - name: Build Executable
       run: |
-        pyinstaller  --icon Pacman.png --add-data "C:\Users\udayg\OneDrive\Documents\Hackathon\chest.png;." --add-data "C:\Users\udayg\OneDrive\Documents\Hackathon\Clyde.png;." --add-data "C:\Users\udayg\OneDrive\Documents\Hackathon\Inky.png;." --add-data "C:\Users\udayg\OneDrive\Documents\Hackathon\Pacman.png;." --add-data "C:\Users\udayg\OneDrive\Documents\Hackathon\Pinky.png;." --add-data "C:\Users\udayg\OneDrive\Documents\Hackathon\Player.png;." --add-data "C:\Users\udayg\OneDrive\Documents\Hackathon\rock.png;." --add-data "C:\Users\udayg\OneDrive\Documents\Hackathon\Blinky.png;." --noconsole --onefile BossBattles.py
+        pyinstaller  --icon Pacman.png --add-data "chest.png;." --add-data "Clyde.png;." --add-data "Inky.png;." --add-data "Pacman.png;." --add-data "Pinky.png;." --add-data "Player.png;." --add-data "rock.png;." --add-data "Blinky.png;." --noconsole --onefile BossBattles.py
 
     - name: Upload Artifact
       uses: actions/upload-artifact@v2
