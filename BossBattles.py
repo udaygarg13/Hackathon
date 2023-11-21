@@ -1,7 +1,7 @@
 import pygame
 import sys
 import random
-import os
+import os,math
 
 def resource_path(relative_path):
     if hasattr(sys, '_MEIPASS'):
@@ -209,8 +209,19 @@ class Stage:
             self.player.health -= self.boss.dps
         else:
             if self.boss_move_timer % self.boss.speed == 0:
+                boss_temp_pos = [self.boss.x,self.boss.y]
+                player_temp_pos = [self.player.x,self.player.y]
+                distance = math.sqrt((self.boss.x-self.player.x)**2 + (self.boss.y-self.player.y)**2 )
                 boss_key = random.choice(['w', 's', 'a', 'd'])
                 self.boss.move(boss_key,self.rock_locations)
+                new_distance = math.sqrt((self.boss.x-self.player.x)**2 + (self.boss.y-self.player.y)**2 )
+                while new_distance>distance:
+                    self.boss.x,self.boss.y = boss_temp_pos[0],boss_temp_pos[1]
+                    self.player.x,self.player.y = player_temp_pos[0],player_temp_pos[1]
+                    boss_key = random.choice(['w', 's', 'a', 'd'])
+                    self.boss.move(boss_key,self.rock_locations)
+                    new_distance = math.sqrt((self.boss.x-self.player.x)**2 + (self.boss.y-self.player.y)**2 )
+
 
     def draw_grid(self):
         for row in range(Stage.ROWS):
